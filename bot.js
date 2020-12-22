@@ -73,7 +73,11 @@ client.on('message', msg=>{
 });
 
 function help_command(msg) {
-    msg.channel.send('**Commands:**\n> joindate\n> fact')
+    msg.channel.send(`**Commands:**
+> joindate
+> fact
+> gif
+> avatar`);
 }
 
 function joindate_command(msg) {
