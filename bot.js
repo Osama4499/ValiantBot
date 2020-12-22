@@ -4,19 +4,25 @@ const client = new Discord.Client();
 const fetch = require("node-fetch");
 
 const prefix = config.prefix;
-var reportsChannelId = config.reportsChannel;
-var staffReportsChannelId = config.staffReportsChannel;
-var welcomeChannelId = config.welcomeChannel;
+
+var justGuild;
+var reportsChannel;
+var staffReportsChannel;
+var welcomeChannel;
 
 client.login(config.botToken);
 
 client.on('ready', ()=>{
     console.log('ValiantBot is running ...');
+    justGuild = client.guilds.resolve(config.justId);
+    reportsChannel = justGuild.channels.resolve(config.reportsChannel);
+    staffReportsChannel = justGuild.channels.resolve(config.staffReportsChannel);
+    welcomeChannel = justGuild.channels.resolve(config.welcomeChannel);
 });
 
 // welcome message
 client.on('guildMemberAdd', member => {
-    member.guild.channels.resolve(welcomeChannelId).send(
+    welcomeChannel.send(
         `**Hey ${member}, welcome to the server!**
 Make sure you take a look at <#694548553300836432>.
 Grab some roles from <#695978314614964244>.
@@ -25,16 +31,17 @@ Then come chat in <#640645946983841843>.`
 });
 
 client.on('message', msg=>{
-    if (msg.guild == null) {
-        //handleDM(msg);
+    if (msg.guild == null && !msg.author.bot) {
+        handleDM(msg);
         return;
     }
-    if (msg.channel.id === reportsChannelId) {
+    if (msg.channel === reportsChannel) {
         handleReport(msg);
         return;
     }
 
-    if (!msg.content.startsWith(prefix)) return;
+    if (!msg.content.startsWith(prefix))
+        return;
 
     if (msg.content === prefix + 'help')
         help_command(msg);
@@ -78,19 +85,22 @@ function dm_command(msg) {
         return; // exit function if message has no text or attachments
 
     forwardMessage(text, msg, member);
+
+    msg.channel.send(`DM sent to ${member}.`);
+    console.log(`dm sent to ${member.user.username}#${member.user.discriminator}.`);
 }
 
 function handleReport(msg) {
+    console.log(`report received from ${msg.author.username}#${msg.author.discriminator}.`);
     let text = `**Report from ${msg.member}:**\n${msg.content}`;
-    let target = msg.guild.channels.resolve(staffReportsChannelId);
-    forwardMessage(text, msg, target);
+    forwardMessage(text, msg, staffReportsChannel);
     msg.delete();
 }
 
 function handleDM(msg) {
-    let text = `**DM from ${msg.member}:**\n${msg.content}`;
-    let target = msg.guild.channels.resolve(staffReportsChannelId);
-    forwardMessage(text, msg, target);
+    console.log(`dm received from ${msg.author.username}#${msg.author.discriminator}.`);
+    let text = `**DM from ${justGuild.members.resolve(msg.author.id)}:**\n${msg.content}`;
+    forwardMessage(text, msg, staffReportsChannel);
 }
 
 async function sendFact(channel) {
