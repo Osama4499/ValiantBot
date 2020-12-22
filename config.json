@@ -6,5 +6,8 @@
     "staffReportsChannel" : "787722722028552192",
     "welcomeChannel" : "694108827049787393",
     "StaffRoleId" : "571392908603817985",
-    "randomFactsAPI" : "https://useless-facts.sameerkumar.website/api"
+    "randomFactsAPI" : "https://useless-facts.sameerkumar.website/api",
+    "giphyKey" : "fN7aTAliTPL6hQvGjCm35zxTVIV21knw",
+    "giphyRandomAPI" : "https://api.giphy.com/v1/gifs/random",
+    "nekoAPI" : "https://nekos.life/api/v2"
 }

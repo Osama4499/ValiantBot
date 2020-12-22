@@ -1,4 +1,5 @@
 const config = require('./config.json');
+const neko = require('./nekoendpoints.json');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const fetch = require("node-fetch");
@@ -54,6 +55,21 @@ client.on('message', msg=>{
 
     else if (msg.content === prefix + 'fact')
         sendFact(msg.channel);
+    
+    else if (msg.content.startsWith(prefix + 'gif'))
+        sendGif(msg.channel, msg.content.split(' ')[1]);
+
+    else if (msg.content === prefix + 'avatar')
+        sendNeko(msg.channel, 'avatar');
+
+    else if (msg.content.startsWith(prefix + 'nsfw') && msg.channel.nsfw) {
+        let parts = msg.content.split(' ');
+        if (parts[1] == null)
+            msg.channel.send("```pussy, lewd, les, kuni, cum, classic, boobs, bj, anal, yuri, trap, tits, solog, solo, pwankg, lewdkemo, lewdk, keta, hololewd, holoero, hentai, futanari, femdom, feetg, erofeet, feet, ero, erok, erokemo, eron, eroyuri, blowjob, spank, gasm, pussy_jpg, cum_jpg, Random_hentai_gif, nsfw_neko_gif, nsfw_avatar```")
+        else
+            sendNeko(msg.channel, parts[1]);
+    }
+
 });
 
 function help_command(msg) {
@@ -107,6 +123,18 @@ async function sendFact(channel) {
     let response = await fetch(config.randomFactsAPI);
     let data = await response.json();
     channel.send('> ' + data.data);
+}
+
+async function sendGif(channel, searchQuery) {
+    let response = await fetch(`${config.giphyRandomAPI}?api_key=${config.giphyKey}&tag=${searchQuery}`);
+    let data = await response.json();
+    channel.send(data.data.url);
+}
+
+async function sendNeko(channel, endpoint) {
+    let response = await fetch(`${config.nekoAPI}/img/${endpoint}`);
+    let data = await response.json();
+    channel.send(data.url);
 }
 
 function forwardMessage(text, sourceMsg, targetChannel) {
