@@ -30,6 +30,10 @@ Then come chat in <#640645946983841843>.`
         );
 });
 
+client.on('voiceStateUpdate', state=>{
+    
+});
+
 client.on('message', msg=>{
     if (msg.guild == null && !msg.author.bot) {
         handleDM(msg);
