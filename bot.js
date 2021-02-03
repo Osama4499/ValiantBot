@@ -5,17 +5,17 @@ const fetch = require("node-fetch");
 const fs = require('fs');
 
 const prefix = config.prefix;
-
+const memberPointsFilePath = config.memberPointsFilePath;
 var justGuild;
 var reportsChannel;
 var staffReportsChannel;
 var welcomeChannel;
 
 class FileActions {
-    static getMembersPoints() {
+    static readMembersPoints() {
         var pointsMap = new Map();
 
-        var rawText = fs.readFileSync('./data/MembersPoints.txt', "utf8");
+        var rawText = fs.readFileSync(memberPointsFilePath, "utf8");
 
         var lines = rawText.split(";");
         lines.pop();
@@ -26,6 +26,13 @@ class FileActions {
         });
 
         return pointsMap;
+    }
+    static writeMembersPoints() {
+        var dataToWrite = "";
+        for (const[memberID, points] of pointsMap) {
+            dataToWrite += `${memberID} : ${points};\n`;
+        }
+        fs.writeFileSync(memberPointsFilePath, dataToWrite);
     }
 }
 
@@ -108,7 +115,7 @@ class Commands {
     }
 }
 
-var pointsMap = FileActions.getMembersPoints();
+var pointsMap = FileActions.readMembersPoints();
 
 client.login(config.botToken);
 
@@ -212,4 +219,6 @@ function trackVoiceActivity() {
             }
         }
     }
+
+    FileActions.writeMembersPoints();
 }
