@@ -9,5 +9,16 @@
     "randomFactsAPI" : "https://useless-facts.sameerkumar.website/api",
     "giphyKey" : "fN7aTAliTPL6hQvGjCm35zxTVIV21knw",
     "giphyRandomAPI" : "https://api.giphy.com/v1/gifs/random",
-    "memberPointsFilePath" : "./data/MembersPoints.txt"
+    "memberPointsFilePath" : "./data/MembersPoints.txt",
+    "unrankedRole" : "805780766771511386",
+    "bronzeRole" : "806403611839823953",
+    "silverRole" : "805780843465277450",
+    "goldRole" : "805781033693347840",
+    "platinumRole" : "805781064815607809",
+    "diamondRole" : "805781210394787850",
+    "bronzeRoleThreshold" : 500,
+    "silverRoleThreshold" : 1500,
+    "goldRoleThreshold" : 3000,
+    "platinumRoleThreshold" : 5000,
+    "diamondRoleThreshold" : 10000
 }

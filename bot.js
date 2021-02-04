@@ -6,6 +6,7 @@ const fs = require('fs');
 
 const prefix = config.prefix;
 const memberPointsFilePath = config.memberPointsFilePath;
+
 var justGuild;
 var reportsChannel;
 var staffReportsChannel;
@@ -102,20 +103,19 @@ class Commands {
         }
     }
     static points(msg) {
-        if (msg instanceof Discord.Message) {
-            var messageToSend = "";
-
-            for (const[memberID, points] of pointsMap) {
-                const member = msg.guild.member(memberID);
-                messageToSend += `**${member.user.username}**#${member.user.discriminator} : ${points}\n`;
-            }
-
-            msg.channel.send(messageToSend);
-        }
+        var messageToSend = "";
+        // for (const[memberID, points] of pointsMap) {
+        //     const member = msg.guild.member(memberID);
+        //     if (member != undefined)
+        //         messageToSend += `**${member.user.username}**#${member.user.discriminator} : ${points}\n`;
+        // }
+        messageToSend = `**${msg.member.displayName}** : ${pointsMap.get(msg.member.id)}`;
+        msg.channel.send(messageToSend);
     }
 }
 
 var pointsMap = FileActions.readMembersPoints();
+var messagedPrev60Secs = new Set();
 
 client.login(config.botToken);
 
@@ -126,7 +126,7 @@ client.on('ready', ()=>{
     staffReportsChannel = justGuild.channels.resolve(config.staffReportsChannel);
     welcomeChannel = justGuild.channels.resolve(config.welcomeChannel);
     
-    setInterval(trackVoiceActivity, 60000);
+    setInterval(trackActivity, 60000);
 });
 
 // welcome message
@@ -137,41 +137,39 @@ Make sure you take a look at <#694548553300836432>.
 Grab some roles from <#695978314614964244>.
 Then come chat in <#640645946983841843>.`
         );
+    member.roles.add(ranks[0], 'new member');
 });
 client.on('message', msg=>{
     if (msg.guild == null && !msg.author.bot) {
         handleDM(msg);
         return;
     }
+
     if (msg.channel === reportsChannel) {
         handleReport(msg);
         return;
     }
+
+    if (!msg.author.bot)
+        messagedPrev60Secs.add(msg.author.id);
 
     if (!msg.content.startsWith(prefix))
         return;
 
     if (msg.content === prefix + 'help')
         Commands.help_command(msg);
-
     else if (msg.content.startsWith(prefix + 'joindate'))
         Commands.joindate_command(msg);
-
     else if (msg.content.startsWith(prefix + "dm"))
         Commands.dm_command(msg);
-
     else if (msg.content === prefix + 'fact')
         sendFact(msg.channel);
-    
     else if (msg.content.startsWith(prefix + 'gif'))
         sendGif(msg.channel, msg.content.split(' ')[1]);
-
     else if (msg.content.startsWith(prefix + 'addrole'))
         Commands.addrole_command(msg);
-
     else if (msg.content === prefix + 'points')
         Commands.points(msg);
-
 });
 function handleReport(msg) {
     console.log(`report received from ${msg.author.username}#${msg.author.discriminator}.`);
@@ -205,20 +203,49 @@ function forwardMessage(text, sourceMsg, targetChannel) {
         files: attachmentsUrls
     }).catch(console.error);
 }
-function trackVoiceActivity() {
-    const channels = justGuild.channels.cache.filter(c => c.type === 'voice');
+function trackActivity() {
 
+    function incrementPoints(member) {
+        var points = pointsMap.get(member.id);
+        points = points == undefined ? 1 : points + 1;
+        pointsMap.set(member.id, points);
+
+        if (points > config.diamondRoleThreshold) {
+            member.roles.add(config.diamondRole, 'Rank up');
+            member.roles.remove(config.platinumRole, 'Rank up');
+        }
+        else if (points > config.platinumRoleThreshold) {
+            member.roles.add(config.platinumRole, 'Rank up');
+            member.roles.remove(config.goldRole, 'Rank up');
+        }
+        else if (points > config.goldRoleThreshold) {
+            member.roles.add(config.goldRole, 'Rank up');
+            member.roles.remove(config.silverRole, 'Rank up');
+        }
+        else if (points > config.silverRoleThreshold) {
+            member.roles.add(config.silverRole, 'Rank up');
+            member.roles.remove(config.bronzeRole, 'Rank up');
+        }
+        else if (points > config.bronzeRoleThreshold) {
+            member.roles.add(config.bronzeRole, 'Rank up');
+            member.roles.remove(config.unrankedRole, 'Rank up');
+        }
+    }
+
+    //voice activity
+    const channels = justGuild.channels.cache.filter(c => c.type === 'voice');
     for (const [channelID, channel] of channels) {
         for (const [memberID, member] of channel.members) {
             if (!member.voice.mute && !member.user.bot) {
-                const activity = pointsMap.get(memberID);
-                if (activity == undefined)
-                pointsMap.set(memberID, 1);
-                else
-                pointsMap.set(memberID, activity + 1);
+                incrementPoints(member);
             }
         }
     }
 
+    //text activity
+    messagedPrev60Secs.forEach(memberID => incrementPoints(justGuild.member(memberID)));
+    messagedPrev60Secs = new Set();
+
+    //write data
     FileActions.writeMembersPoints();
 }
