@@ -5,37 +5,11 @@ const fetch = require("node-fetch");
 const fs = require('fs');
 
 const prefix = config.prefix;
-const memberPointsFilePath = config.memberPointsFilePath;
 
-var justGuild;
-var reportsChannel;
-var staffReportsChannel;
-var welcomeChannel;
-
-class FileActions {
-    static readMembersPoints() {
-        var pointsMap = new Map();
-
-        var rawText = fs.readFileSync(memberPointsFilePath, "utf8");
-
-        var lines = rawText.split(";");
-        lines.pop();
-        lines.forEach(line=>{
-            line = line.trim();
-            var parts = line.split(" : ");
-            pointsMap.set(parts[0], parseInt(parts[1]));
-        });
-
-        return pointsMap;
-    }
-    static writeMembersPoints() {
-        var dataToWrite = "";
-        for (const[memberID, points] of pointsMap) {
-            dataToWrite += `${memberID} : ${points};\n`;
-        }
-        fs.writeFileSync(memberPointsFilePath, dataToWrite);
-    }
-}
+let justGuild;
+let reportsChannel;
+let staffReportsChannel;
+let welcomeChannel;
 
 class Commands {
     static help(msg) {
@@ -44,7 +18,6 @@ class Commands {
     > fact
     > gif`);
     }
-    
     static joinDate(msg) {
         if (msg.content.includes(' ')) {
             let member = msg.mentions.members.first();
@@ -56,7 +29,6 @@ class Commands {
             msg.channel.send('You joined in: ' + jd.getDate() + '/' + (jd.getMonth() + 1) + '/' + jd.getFullYear());
         }
     }
-    
     static dm(msg) {
         if (!msg.member.roles.cache.find(r => r.id === config.StaffRoleId))
             return; // exit function if not staff
@@ -74,9 +46,24 @@ class Commands {
         msg.channel.send(`DM sent to ${member}.`);
         console.log(`dm sent to ${member.user.username}#${member.user.discriminator}.`);
     }
-    
+    //say <channel id> <message>
+    static say(msg) { 
+        if (msg instanceof Discord.Message) {
+            //msg.member.hasPermission(Discord.Permissions.FLAGS.)
+            if (!isStaff(msg.member))
+                return; // exit function if not staff
+
+            var parts = msg.content.split(" ");
+            var messageToSend = "";
+            for (var i = 2; i < parts.length; ++i)
+                messageToSend += parts[i] + " ";
+            justGuild.channels.resolve(parts[1]).send(messageToSend);
+        }
+    }
     static addRole(msg) {
         if (msg instanceof Discord.Message) {
+            if (!msg.member.roles.cache.find(r => r.id === config.StaffRoleId))
+                return; // exit function if not staff
             try{
                 let parts = msg.content.split(' ');
                 
@@ -87,7 +74,6 @@ class Commands {
                                 continue;
                             member.roles.add(parts[2]);
                             console.log('role given to ' + member.displayName);
-                            count++;
                         }
                     });
                 }
@@ -114,8 +100,31 @@ class Commands {
     }
 }
 
-var pointsMap = FileActions.readMembersPoints();
-var messagedPrev60Secs = new Set();
+const memberPointsFilePath = config.memberPointsFilePath;
+class FileActions {
+    static readMembersPoints() {
+        let pointsMap = new Map();
+
+        let rawText = fs.readFileSync(memberPointsFilePath, "utf8");
+
+        let lines = rawText.split(";");
+        lines.pop();
+        lines.forEach(line=>{
+            line = line.trim();
+            let parts = line.split(" : ");
+            pointsMap.set(parts[0], parseInt(parts[1]));
+        });
+
+        return pointsMap;
+    }
+    static writeMembersPoints() {
+        let dataToWrite = "";
+        for (const[memberID, points] of pointsMap) {
+            dataToWrite += `${memberID} : ${points};\n`;
+        }
+        fs.writeFileSync(memberPointsFilePath, dataToWrite);
+    }
+}
 
 client.login(config.botToken);
 
@@ -137,7 +146,7 @@ Make sure you take a look at <#694548553300836432>.
 Grab some roles from <#695978314614964244>.
 Then come chat in <#640645946983841843>.`
         );
-    member.roles.add(ranks[0], 'new member');
+    member.roles.add(config.unrankedRole, 'new member');
 });
 client.on('message', msg=>{
     if (msg.guild == null && !msg.author.bot) {
@@ -157,17 +166,19 @@ client.on('message', msg=>{
         return;
 
     if (msg.content === prefix + 'help')
-        Commands.help_command(msg);
+        Commands.help(msg);
     else if (msg.content.startsWith(prefix + 'joindate'))
-        Commands.joindate_command(msg);
+        Commands.joinDate(msg);
     else if (msg.content.startsWith(prefix + "dm"))
-        Commands.dm_command(msg);
+        Commands.dm(msg);
+    else if (msg.content.startsWith(prefix + "say"))
+        Commands.say(msg);
     else if (msg.content === prefix + 'fact')
         sendFact(msg.channel);
     else if (msg.content.startsWith(prefix + 'gif'))
         sendGif(msg.channel, msg.content.split(' ')[1]);
     else if (msg.content.startsWith(prefix + 'addrole'))
-        Commands.addrole_command(msg);
+        Commands.addRole(msg);
     else if (msg.content === prefix + 'points')
         Commands.points(msg);
 });
@@ -203,10 +214,16 @@ function forwardMessage(text, sourceMsg, targetChannel) {
         files: attachmentsUrls
     }).catch(console.error);
 }
-function trackActivity() {
+function isStaff(member) {
+    return member.hasPermission(Discord.Permissions.FLAGS.MANAGE_MESSAGES);
+}
 
+let pointsMap = FileActions.readMembersPoints();
+let messagedPrev60Secs = new Set();
+function trackActivity() {
+    let justGuild = client.guilds.resolve(config.justId);
     function incrementPoints(member) {
-        var points = pointsMap.get(member.id);
+        let points = pointsMap.get(member.id);
         points = points == undefined ? 1 : points + 1;
         pointsMap.set(member.id, points);
 
@@ -249,3 +266,4 @@ function trackActivity() {
     //write data
     FileActions.writeMembersPoints();
 }
+
