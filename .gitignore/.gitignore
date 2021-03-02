@@ -1,3 +1,6 @@
+#secret bot token
+token.json
+
 # Logs
 logs
 *.log
