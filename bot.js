@@ -1,5 +1,5 @@
 const config = require('./config.json');
-const token = require('./token.json');
+const secret = require('./secret.json');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const fetch = require("node-fetch");
@@ -127,7 +127,7 @@ class FileActions {
     }
 }
 
-client.login(token.token);
+client.login(secret.botToken);
 
 client.on('ready', ()=>{
     console.log('ValiantBot is running ...');
@@ -200,7 +200,7 @@ async function sendFact(channel) {
     channel.send('> ' + data.data);
 }
 async function sendGif(channel, searchQuery) {
-    let response = await fetch(`${config.giphyRandomAPI}?api_key=${config.giphyKey}&tag=${searchQuery}`);
+    let response = await fetch(`${config.giphyRandomAPI}?api_key=${secret.giphyKey}&tag=${searchQuery}`);
     let data = await response.json();
     channel.send(data.data.url);
 }
