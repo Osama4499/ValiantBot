@@ -1,4 +1,5 @@
 const config = require('./config.json');
+const token = require('./token.json');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const fetch = require("node-fetch");
@@ -126,7 +127,7 @@ class FileActions {
     }
 }
 
-client.login(config.botToken);
+client.login(token.token);
 
 client.on('ready', ()=>{
     console.log('ValiantBot is running ...');
